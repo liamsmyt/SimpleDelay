@@ -167,7 +167,7 @@ float SimpleDelay::getDelayTimeFromIntervalIndex(int intervalIndex) {
 }
 
 void SimpleDelay::processDelay(juce::dsp::AudioBlock<float>& block, float delayTimeSeconds) {
-
+  
 }
 
 
