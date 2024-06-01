@@ -12,7 +12,10 @@
 
 
 //==============================================================================
-TestpluginAudioProcessor::TestpluginAudioProcessor()
+
+
+
+SimpleDelay::SimpleDelay()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor(
           BusesProperties()
@@ -27,14 +30,16 @@ TestpluginAudioProcessor::TestpluginAudioProcessor()
 {
 }
 
-TestpluginAudioProcessor::~TestpluginAudioProcessor() {}
+SimpleDelay::~SimpleDelay() {}
 
 //==============================================================================
-const juce::String TestpluginAudioProcessor::getName() const {
+
+
+const juce::String SimpleDelay::getName() const {
   return JucePlugin_Name;
 }
 
-bool TestpluginAudioProcessor::acceptsMidi() const {
+bool SimpleDelay::acceptsMidi() const {
 #if JucePlugin_WantsMidiInput
   return true;
 #else
@@ -42,7 +47,7 @@ bool TestpluginAudioProcessor::acceptsMidi() const {
 #endif
 }
 
-bool TestpluginAudioProcessor::producesMidi() const {
+bool SimpleDelay::producesMidi() const {
 #if JucePlugin_ProducesMidiOutput
   return true;
 #else
@@ -50,7 +55,7 @@ bool TestpluginAudioProcessor::producesMidi() const {
 #endif
 }
 
-bool TestpluginAudioProcessor::isMidiEffect() const {
+bool SimpleDelay::isMidiEffect() const {
 #if JucePlugin_IsMidiEffect
   return true;
 #else
@@ -58,39 +63,43 @@ bool TestpluginAudioProcessor::isMidiEffect() const {
 #endif
 }
 
-double TestpluginAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+double SimpleDelay::getTailLengthSeconds() const { return 0.0; }
 
-int TestpluginAudioProcessor::getNumPrograms() {
+int SimpleDelay::getNumPrograms() {
   return 1;  // NB: some hosts don't cope very well if you tell them there are 0
              // programs, so this should be at least 1, even if you're not
              // really implementing programs.
 }
 
-int TestpluginAudioProcessor::getCurrentProgram() { return 0; }
+int SimpleDelay::getCurrentProgram() { return 0; }
 
-void TestpluginAudioProcessor::setCurrentProgram(int index) {}
+void SimpleDelay::setCurrentProgram(int index) {}
 
-const juce::String TestpluginAudioProcessor::getProgramName(int index) {
+const juce::String SimpleDelay::getProgramName(int index) {
   return {};
 }
 
-void TestpluginAudioProcessor::changeProgramName(int index,
+void SimpleDelay::changeProgramName(int index,
                                                  const juce::String &newName) {}
 
 //==============================================================================
-void TestpluginAudioProcessor::prepareToPlay(double sampleRate,
+void SimpleDelay::prepareToPlay(double sampleRate,
                                              int samplesPerBlock) {
-  // Use this method as the place to do any pre-playback
-  // initialisation that you need..
+  juce::dsp::ProcessSpec spec;
+
+  spec.sampleRate = sampleRate;
+  spec.maximumBlockSize = samplesPerBlock;
+  spec.numChannels = 1;
+
 }
 
-void TestpluginAudioProcessor::releaseResources() {
+void SimpleDelay::releaseResources() {
   // When playback stops, you can use this as an opportunity to free up any
   // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool TestpluginAudioProcessor::isBusesLayoutSupported(
+bool SimpleDelay::isBusesLayoutSupported(
     const BusesLayout &layouts) const {
 #if JucePlugin_IsMidiEffect
   juce::ignoreUnused(layouts);
@@ -113,52 +122,77 @@ bool TestpluginAudioProcessor::isBusesLayoutSupported(
 }
 #endif
 
-void TestpluginAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
-                                            juce::MidiBuffer &midiMessages) {
-  juce::ScopedNoDenormals noDenormals;
-  auto totalNumInputChannels = getTotalNumInputChannels();
-  auto totalNumOutputChannels = getTotalNumOutputChannels();
+void SimpleDelay::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    auto numSamples = buffer.getNumSamples();
 
-  // In case we have more outputs than inputs, this code clears any output
-  // channels that didn't contain input data, (because these aren't
-  // guaranteed to be empty - they may contain garbage).
-  // This is here to avoid people getting screaming feedback
-  // when they first compile a plugin, but obviously you don't need to keep
-  // this code if your algorithm always overwrites all the output channels.
-  for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-    buffer.clear(i, 0, buffer.getNumSamples());
+    // Clear output channels that exceed the number of input channels
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear(i, 0, numSamples);
 
-  // This is the place where you'd normally do the guts of your plugin's
-  // audio processing...
-  // Make sure to reset the state if your inner loop is processing
-  // the samples and the outer loop is handling the channels.
-  // Alternatively, you can process the samples with the channels
-  // interleaved by keeping the same state.
-  for (int channel = 0; channel < totalNumInputChannels; ++channel) {
-    auto *channelData = buffer.getWritePointer(channel);
+    auto* intervalParameter = apvts.getRawParameterValue("Intervals");
+    int intervalIndex = static_cast<int>(*intervalParameter);
 
-    // ..do something to the data...
-  }
+    // Ensure intervalIndex is within the valid range
+    if (intervalIndex < 0 || intervalIndex >= 7) {
+        intervalIndex = 2; // Default to 1/8 note
+    }
+
+    // Map the interval index to delay time in seconds
+    float delayTimeSeconds = getDelayTimeFromIntervalIndex(intervalIndex);
+
+    juce::dsp::AudioBlock<float> block (buffer);
+    processDelay(block, delayTimeSeconds);
 }
 
+float SimpleDelay::getDelayTimeFromIntervalIndex(int intervalIndex) {
+    float tempoBPM = 120.0f; // Example tempo, this should ideally be retrieved from your DAW or set dynamically
+    float noteValue = 0.0f;
+
+
+    switch (intervalIndex) {
+        case 0: noteValue = 1.0f / 32.0f; break; // 1/32 note
+        case 1: noteValue = 1.0f / 16.0f; break; // 1/16 note
+        case 2: noteValue = 1.0f / 8.0f; break;  // 1/8 note
+        case 3: noteValue = 1.0f / 4.0f; break;  // 1/4 note
+        case 4: noteValue = 1.0f / 2.0f; break;  // 1/2 note
+        case 5: noteValue = 1.0f; break;         // Whole note
+        case 6: noteValue = 2.0f; break;         // Double whole note
+        default: noteValue = 1.0f / 8.0f; break; // Default to 1/8 note
+    }
+
+    return 60.0f / (tempoBPM * noteValue);
+}
+
+void SimpleDelay::processDelay(juce::dsp::AudioBlock<float>& block, float delayTimeSeconds) {
+
+}
+
+
+
+
+
+
 //==============================================================================
-bool TestpluginAudioProcessor::hasEditor() const {
+bool SimpleDelay::hasEditor() const {
   return true;  // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor *TestpluginAudioProcessor::createEditor() {
-  return new TestpluginAudioProcessorEditor(*this);
+juce::AudioProcessorEditor *SimpleDelay::createEditor() {
+  return new SimpleDelayEditor(*this);
 }
 
 //==============================================================================
-void TestpluginAudioProcessor::getStateInformation(
+void SimpleDelay::getStateInformation(
     juce::MemoryBlock &destData) {
   // You should use this method to store your parameters in the memory block.
   // You could do that either as raw data, or use the XML or ValueTree classes
   // as intermediaries to make it easy to save and load complex data.
 }
 
-void TestpluginAudioProcessor::setStateInformation(const void *data,
+void SimpleDelay::setStateInformation(const void *data,
                                                    int sizeInBytes) {
   // You should use this method to restore your parameters from this memory
   // block, whose contents will have been created by the getStateInformation()
@@ -168,5 +202,16 @@ void TestpluginAudioProcessor::setStateInformation(const void *data,
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter() {
-  return new TestpluginAudioProcessor();
+  return new SimpleDelay();
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout SimpleDelay::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("Intervals",
+                                                              "Intervals",
+                                                              juce::StringArray({ "1/32","1/16", "1/8", "1/4", "1/2", "1", "2" }),
+                                                              3));
+    return layout;
 }

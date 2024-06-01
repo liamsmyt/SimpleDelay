@@ -11,35 +11,38 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-TestpluginAudioProcessorEditor::TestpluginAudioProcessorEditor(
-    TestpluginAudioProcessor &p)
-    : AudioProcessorEditor(&p), audioProcessor(p) {
-  // Make sure that before the constructor has finished, you've set the
-  // editor's size to whatever you need it to be.
-  setSize(400, 300);
-  // load Image from BinaryData
-  svgimg = juce::Drawable::createFromImageData(BinaryData::jucelogo_svg,
-                                               BinaryData::jucelogo_svgSize);
+SimpleDelayEditor::SimpleDelayEditor(
+    SimpleDelay &p)
+    : AudioProcessorEditor(&p), 
+    // attach apvts to slider and labels   
+    intervalSliderAttachment(audioProcessor.apvts, "Intervals", intervalSlider),
+    audioProcessor(p) {
+
+    //setting window size
+  setSize(600, 600);
+
+  //attach labels
+  intervalLabel.setText ("Intervals", juce::NotificationType::dontSendNotification);
+  intervalLabel.attachToComponent (&intervalSlider, false);
+
+  intervalSlider.setSuffix("bar");
+
+  addAndMakeVisible(intervalSlider);
 }
 
-TestpluginAudioProcessorEditor::~TestpluginAudioProcessorEditor() {}
+SimpleDelayEditor::~SimpleDelayEditor() {}
+
 
 //==============================================================================
-void TestpluginAudioProcessorEditor::paint(juce::Graphics &g) {
+void SimpleDelayEditor::paint(juce::Graphics &g) {
   // (Our component is opaque, so we must completely fill the background with a
   // solid colour)
   g.fillAll(
       getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-  svgimg->drawWithin(g, getLocalBounds().toFloat(),
-                     juce::Justification::centred, 1);
 
   g.setColour(juce::Colours::black);
-  g.setFont(30.0f);
-  g.drawFittedText("Hello World!", getLocalBounds(),
-                   juce::Justification::centred, 1);
 }
 
-void TestpluginAudioProcessorEditor::resized() {
-  // This is generally where you'll want to lay out the positions of any
-  // subcomponents in your editor..
+void SimpleDelayEditor::resized() {
+  intervalSlider.setBounds(30, 120, 60, 60);
 }

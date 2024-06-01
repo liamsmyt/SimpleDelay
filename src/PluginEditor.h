@@ -9,26 +9,35 @@
 #pragma once
 
 #include <JuceHeader.h>
-
 #include "PluginProcessor.h"
+#include "CustomLookAndFeel.h"
+#include "RotarySlider.h"
+#include "NameLabel.h"
 
 
 //==============================================================================
 /**
  */
-class TestpluginAudioProcessorEditor : public juce::AudioProcessorEditor {
+class SimpleDelayEditor : public juce::AudioProcessorEditor {
  public:
-  TestpluginAudioProcessorEditor(TestpluginAudioProcessor &);
-  ~TestpluginAudioProcessorEditor() override;
+  SimpleDelayEditor(SimpleDelay &);
+  ~SimpleDelayEditor() override;
 
   //==============================================================================
   void paint(juce::Graphics &) override;
   void resized() override;
 
  private:
-  // This reference is provided as a quick way for your editor to
-  // access the processor object that created it.
-  TestpluginAudioProcessor &audioProcessor;
-  std::unique_ptr<juce::Drawable> svgimg;
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TestpluginAudioProcessorEditor)
+  SimpleDelay &audioProcessor;
+
+// intantiate label and slider instances
+
+NameLabel intervalLabel;
+
+RotarySlider intervalSlider;
+
+// intantiate slider attachments
+juce::AudioProcessorValueTreeState::SliderAttachment intervalSliderAttachment;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleDelayEditor)
 };

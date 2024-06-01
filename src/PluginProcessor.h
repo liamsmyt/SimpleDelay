@@ -13,11 +13,11 @@
 //==============================================================================
 /**
  */
-class TestpluginAudioProcessor : public juce::AudioProcessor {
+class SimpleDelay : public juce::AudioProcessor {
  public:
   //==============================================================================
-  TestpluginAudioProcessor();
-  ~TestpluginAudioProcessor() override;
+  SimpleDelay();
+  ~SimpleDelay() override;
 
   //==============================================================================
   void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -47,12 +47,19 @@ class TestpluginAudioProcessor : public juce::AudioProcessor {
   void setCurrentProgram(int index) override;
   const juce::String getProgramName(int index) override;
   void changeProgramName(int index, const juce::String &newName) override;
+  void processDelay(juce::dsp::AudioBlock<float>& block, float delayTimeSeconds);
 
   //==============================================================================
   void getStateInformation(juce::MemoryBlock &destData) override;
   void setStateInformation(const void *data, int sizeInBytes) override;
 
- private:
+  static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+  juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters", createParameterLayout() };
+
+ private: 
+ float getDelayTimeFromIntervalIndex(int intervalIndex);
+  
   //==============================================================================
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TestpluginAudioProcessor)
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleDelay)
 };

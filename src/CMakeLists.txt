@@ -18,9 +18,9 @@ juce_add_plugin(ExamplePlugin
     COMPANY_COPYRIGHT "Tomoya Matsuura"
     COMPANY_WEBSITE "https://matsuuratomoya.com/"
     COMPANY_EMAIL "me@matsuuratomoya.com"
-    IS_SYNTH FALSE                       # Is this a synth or an effect?
-    # NEEDS_MIDI_INPUT TRUE/FALSE               # Does the plugin need midi input?
-    # NEEDS_MIDI_OUTPUT TRUE/FALSE              # Does the plugin need midi output?
+    IS_SYNTH FALSE                      # Is this a synth or an effect?
+    NEEDS_MIDI_INPUT FALSE               # Does the plugin need midi input?
+    NEEDS_MIDI_OUTPUT FALSE            # Does the plugin need midi output?
     # IS_MIDI_EFFECT TRUE/FALSE                 # Is this plugin a MIDI effect?
     # EDITOR_WANTS_KEYBOARD_FOCUS TRUE/FALSE    # Does the editor need keyboard focus?
     # COPY_PLUGIN_AFTER_BUILD TRUE/FALSE        # Should the plugin be installed to a default location after building?
@@ -29,7 +29,7 @@ juce_add_plugin(ExamplePlugin
     FORMATS 
     # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
             Standalone 
-            AU
+            #AU
             # AUv3 
             VST3 
             # Unity 
@@ -46,7 +46,7 @@ juce_add_plugin(ExamplePlugin
     MICROPHONE_PERMISSION_ENABLED TRUE
     MICROPHONE_PERMISSION_TEXT "This applicaion requires a permission to use an audio input device of your computer. By Default, Built-In microphone will be used."
 
-    PRODUCT_NAME "ExamplePlugin")        # The name of the final 
+    PRODUCT_NAME "SimpleDelay")        # The name of the final 
 
 target_compile_features(ExamplePlugin PUBLIC cxx_std_17)
 
@@ -68,6 +68,8 @@ ${CMAKE_SOURCE_DIR}/assets/juce-logo.svg
 target_sources(ExamplePlugin PRIVATE
     PluginEditor.cpp
     PluginProcessor.cpp
+    CustomLookAndFeel.cpp 
+    RotarySlider.cpp 
 )
 
 target_link_libraries(ExamplePlugin PUBLIC
