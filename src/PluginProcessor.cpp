@@ -85,12 +85,10 @@ void SimpleDelay::changeProgramName(int index,
 //==============================================================================
 void SimpleDelay::prepareToPlay(double sampleRate,
                                              int samplesPerBlock) {
-  juce::dsp::ProcessSpec spec;
-
-  spec.sampleRate = sampleRate;
-  spec.maximumBlockSize = samplesPerBlock;
-  spec.numChannels = 1;
-
+    auto delayBufferSize = static_cast<int>(2 * sampleRate); // 2 seconds of delay buffer
+    delayBuffer.setSize(getTotalNumInputChannels(), delayBufferSize);
+    delayBuffer.clear();
+    writePosition = 0;
 }
 
 void SimpleDelay::releaseResources() {
@@ -126,54 +124,71 @@ void SimpleDelay::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-    auto numSamples = buffer.getNumSamples();
 
     // Clear output channels that exceed the number of input channels
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear(i, 0, numSamples);
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    auto* intervalParameter = apvts.getRawParameterValue("Intervals");
-    int intervalIndex = static_cast<int>(*intervalParameter);
+    auto bufferSize = buffer.getNumSamples();
+    auto delayBufferSize = delayBuffer.getNumSamples();
 
-    // Ensure intervalIndex is within the valid range
-    if (intervalIndex < 0 || intervalIndex >= 7) {
-        intervalIndex = 2; // Default to 1/8 note
+    for(int channel = 0; channel < totalNumInputChannels; ++channel){
+      auto* channelData = buffer.getWritePointer(channel);
+      fillCircularBuffer(channel, bufferSize, delayBufferSize, channelData);
+      readFromBuffer (buffer, delayBuffer, channel, bufferSize, delayBufferSize);
     }
 
-    // Map the interval index to delay time in seconds
-    float delayTimeSeconds = getDelayTimeFromIntervalIndex(intervalIndex);
-
-    juce::dsp::AudioBlock<float> block (buffer);
-    processDelay(block, delayTimeSeconds);
+    writePosition += bufferSize;
+    writePosition %= delayBufferSize;
 }
 
-float SimpleDelay::getDelayTimeFromIntervalIndex(int intervalIndex) {
-    float tempoBPM = 120.0f; // Example tempo, this should ideally be retrieved from your DAW or set dynamically
-    float noteValue = 0.0f;
+void SimpleDelay::fillCircularBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData) {
+  // check if buffer fits into delayBuffer
+  if(bufferSize + writePosition < delayBufferSize){
+    // copy buffer to delayBuffer
+    delayBuffer.copyFrom(channel, writePosition, channelData, bufferSize);
+  }
+  // if buffer does not fit and needs to be wrapped
+  else{
+    // How much space is left from the current writePosition to the end of the delayBuffer
+    auto numSamplesToEnd = delayBufferSize - writePosition;
+
+    // Paste part of buffer to the space at the end
+    delayBuffer.copyFrom(channel, writePosition, channelData, numSamplesToEnd);
+
+    // How many samples from the start need to be filled
+    auto numSamplesAtStart = bufferSize - numSamplesToEnd;
 
 
-    switch (intervalIndex) {
-        case 0: noteValue = 1.0f / 32.0f; break; // 1/32 note
-        case 1: noteValue = 1.0f / 16.0f; break; // 1/16 note
-        case 2: noteValue = 1.0f / 8.0f; break;  // 1/8 note
-        case 3: noteValue = 1.0f / 4.0f; break;  // 1/4 note
-        case 4: noteValue = 1.0f / 2.0f; break;  // 1/2 note
-        case 5: noteValue = 1.0f; break;         // Whole note
-        case 6: noteValue = 2.0f; break;         // Double whole note
-        default: noteValue = 1.0f / 8.0f; break; // Default to 1/8 note
-    }
-
-    return 60.0f / (tempoBPM * noteValue);
+    // Paste remaining part of buffer
+    delayBuffer.copyFrom(channel, 0, channelData + numSamplesToEnd, numSamplesAtStart);
+  }
 }
 
-void SimpleDelay::processDelay(juce::dsp::AudioBlock<float>& block, float delayTimeSeconds) {
-  
+void SimpleDelay::readFromBuffer(juce::AudioBuffer<float>& buffer, juce::AudioBuffer<float>& delayBuffer, int channel, int bufferSize, int delayBufferSize)
+{
+  auto readPosition = writePosition - getSampleRate();
+
+  // if readPosition is a negative value means need to invert and go to 'end' of delayBuffer
+  if(readPosition < 0)
+  {
+    readPosition += delayBufferSize;
+  }
+
+  auto g = 0.5f;
+  //if no wrap is needed
+  if(readPosition + bufferSize < delayBufferSize){
+    // copy channelData from the past to present
+    buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, g, g);
+  }
+  else{
+    auto numSamplesToEnd = delayBufferSize - readPosition;
+    buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, g, g);
+
+    auto numSamplesAtStart = bufferSize - numSamplesToEnd;
+    buffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, g, g);
+  }
 }
-
-
-
-
-
 
 //==============================================================================
 bool SimpleDelay::hasEditor() const {
@@ -203,15 +218,4 @@ void SimpleDelay::setStateInformation(const void *data,
 // This creates new instances of the plugin..
 juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter() {
   return new SimpleDelay();
-}
-
-juce::AudioProcessorValueTreeState::ParameterLayout SimpleDelay::createParameterLayout()
-{
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    
-    layout.add (std::make_unique<juce::AudioParameterChoice> ("Intervals",
-                                                              "Intervals",
-                                                              juce::StringArray({ "1/32","1/16", "1/8", "1/4", "1/2", "1", "2" }),
-                                                              3));
-    return layout;
 }

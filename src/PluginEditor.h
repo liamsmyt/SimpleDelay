@@ -9,10 +9,8 @@
 #pragma once
 
 #include <JuceHeader.h>
+
 #include "PluginProcessor.h"
-#include "CustomLookAndFeel.h"
-#include "RotarySlider.h"
-#include "NameLabel.h"
 
 
 //==============================================================================
@@ -28,16 +26,8 @@ class SimpleDelayEditor : public juce::AudioProcessorEditor {
   void resized() override;
 
  private:
+  // This reference is provided as a quick way for your editor to
+  // access the processor object that created it.
   SimpleDelay &audioProcessor;
-
-// intantiate label and slider instances
-
-NameLabel intervalLabel;
-
-RotarySlider intervalSlider;
-
-// intantiate slider attachments
-juce::AudioProcessorValueTreeState::SliderAttachment intervalSliderAttachment;
-
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleDelayEditor)
 };

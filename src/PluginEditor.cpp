@@ -13,25 +13,13 @@
 //==============================================================================
 SimpleDelayEditor::SimpleDelayEditor(
     SimpleDelay &p)
-    : AudioProcessorEditor(&p), 
-    // attach apvts to slider and labels   
-    intervalSliderAttachment(audioProcessor.apvts, "Intervals", intervalSlider),
-    audioProcessor(p) {
-
-    //setting window size
-  setSize(600, 600);
-
-  //attach labels
-  intervalLabel.setText ("Intervals", juce::NotificationType::dontSendNotification);
-  intervalLabel.attachToComponent (&intervalSlider, false);
-
-  intervalSlider.setSuffix("bar");
-
-  addAndMakeVisible(intervalSlider);
+    : AudioProcessorEditor(&p), audioProcessor(p) {
+  // Make sure that before the constructor has finished, you've set the
+  // editor's size to whatever you need it to be.
+  setSize(400, 300);
 }
 
 SimpleDelayEditor::~SimpleDelayEditor() {}
-
 
 //==============================================================================
 void SimpleDelayEditor::paint(juce::Graphics &g) {
@@ -41,8 +29,10 @@ void SimpleDelayEditor::paint(juce::Graphics &g) {
       getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 
   g.setColour(juce::Colours::black);
+  g.setFont(30.0f);
 }
 
 void SimpleDelayEditor::resized() {
-  intervalSlider.setBounds(30, 120, 60, 60);
+  // This is generally where you'll want to lay out the positions of any
+  // subcomponents in your editor..
 }

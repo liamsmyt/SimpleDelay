@@ -53,12 +53,13 @@ class SimpleDelay : public juce::AudioProcessor {
   void getStateInformation(juce::MemoryBlock &destData) override;
   void setStateInformation(const void *data, int sizeInBytes) override;
 
-  static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-
-  juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters", createParameterLayout() };
-
  private: 
- float getDelayTimeFromIntervalIndex(int intervalIndex);
+  void fillCircularBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData);
+  void readFromBuffer(juce::AudioBuffer<float>& buffer,  juce::AudioBuffer<float>& delayBuffer, int channel, int bufferSize, int delayBufferSize);
+
+
+  juce::AudioBuffer<float> delayBuffer;
+  int writePosition { 0 };
   
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleDelay)

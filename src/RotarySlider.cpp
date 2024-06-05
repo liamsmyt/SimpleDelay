@@ -36,23 +36,25 @@ void RotarySlider::paint (juce::Graphics& g)
 {
     juce::Slider::paint (g);
 
-    if (hasKeyboardFocus (false))
-    {
-        auto length = getHeight() > 15 ? 5.0f : 4.0f;
-        auto thick  = getHeight() > 15 ? 3.0f : 2.5f;
+    // border code
+    
+    // if (hasKeyboardFocus (false))
+    // {
+    //     auto length = getHeight() > 15 ? 5.0f : 4.0f;
+    //     auto thick  = getHeight() > 15 ? 3.0f : 2.5f;
         
-        g.setColour (findColour (juce::Slider::textBoxOutlineColourId));
+    //     g.setColour (findColour (juce::Slider::textBoxOutlineColourId));
 
-        //          fromX       fromY        toX                  toY
-        g.drawLine (0,          0,           0,                   length,               thick);
-        g.drawLine (0,          0,           length,              0,                    thick);
-        g.drawLine (0,          getHeight(), 0,                   getHeight() - length, thick);
-        g.drawLine (0,          getHeight(), length,              getHeight(),          thick);
-        g.drawLine (getWidth(), getHeight(), getWidth() - length, getHeight(),          thick);
-        g.drawLine (getWidth(), getHeight(), getWidth(),          getHeight() - length, thick);
-        g.drawLine (getWidth(), 0,           getWidth() - length, 0,                    thick);
-        g.drawLine (getWidth(), 0,           getWidth(),          length,               thick);
-    }
+    //     //          fromX       fromY        toX                  toY
+    //     g.drawLine (0,          0,           0,                   length,               thick);
+    //     g.drawLine (0,          0,           length,              0,                    thick);
+    //     g.drawLine (0,          getHeight(), 0,                   getHeight() - length, thick);
+    //     g.drawLine (0,          getHeight(), length,              getHeight(),          thick);
+    //     g.drawLine (getWidth(), getHeight(), getWidth() - length, getHeight(),          thick);
+    //     g.drawLine (getWidth(), getHeight(), getWidth(),          getHeight() - length, thick);
+    //     g.drawLine (getWidth(), 0,           getWidth() - length, 0,                    thick);
+    //     g.drawLine (getWidth(), 0,           getWidth(),          length,               thick);
+    // }
 }
 
 void RotarySlider::mouseDown (const juce::MouseEvent& event)

@@ -19,8 +19,8 @@ juce_add_plugin(ExamplePlugin
     COMPANY_WEBSITE "https://matsuuratomoya.com/"
     COMPANY_EMAIL "me@matsuuratomoya.com"
     IS_SYNTH FALSE                      # Is this a synth or an effect?
-    NEEDS_MIDI_INPUT FALSE               # Does the plugin need midi input?
-    NEEDS_MIDI_OUTPUT FALSE            # Does the plugin need midi output?
+    #NEEDS_MIDI_INPUT FALSE               # Does the plugin need midi input?
+    #NEEDS_MIDI_OUTPUT FALSE            # Does the plugin need midi output?
     # IS_MIDI_EFFECT TRUE/FALSE                 # Is this plugin a MIDI effect?
     # EDITOR_WANTS_KEYBOARD_FOCUS TRUE/FALSE    # Does the editor need keyboard focus?
     # COPY_PLUGIN_AFTER_BUILD TRUE/FALSE        # Should the plugin be installed to a default location after building?
@@ -68,8 +68,8 @@ ${CMAKE_SOURCE_DIR}/assets/juce-logo.svg
 target_sources(ExamplePlugin PRIVATE
     PluginEditor.cpp
     PluginProcessor.cpp
-    CustomLookAndFeel.cpp 
-    RotarySlider.cpp 
+    #CustomLookAndFeel.cpp 
+    #RotarySlider.cpp 
 )
 
 target_link_libraries(ExamplePlugin PUBLIC
