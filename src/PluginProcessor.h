@@ -52,6 +52,8 @@ class SimpleDelay : public juce::AudioProcessor {
   //==============================================================================
   void getStateInformation(juce::MemoryBlock &destData) override;
   void setStateInformation(const void *data, int sizeInBytes) override;
+  // Create an instance of AudioProcessorValueTreeState
+  juce::AudioProcessorValueTreeState apvts;
 
  private: 
   void fillCircularBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData);

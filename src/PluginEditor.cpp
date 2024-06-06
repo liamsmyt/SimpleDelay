@@ -14,8 +14,9 @@
 SimpleDelayEditor::SimpleDelayEditor(
     SimpleDelay &p)
     : AudioProcessorEditor(&p), audioProcessor(p) {
-  // Make sure that before the constructor has finished, you've set the
-  // editor's size to whatever you need it to be.
+  // Set up the slider
+    setupSlider(gainSlider, gainSliderAttachment, "gain");
+
   setSize(400, 300);
 }
 
@@ -33,6 +34,13 @@ void SimpleDelayEditor::paint(juce::Graphics &g) {
 }
 
 void SimpleDelayEditor::resized() {
-  // This is generally where you'll want to lay out the positions of any
-  // subcomponents in your editor..
+  gainSlider.setBounds (getLocalBounds().reduced (100));
+}
+
+void SimpleDelayEditor::setupSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& parameterID)
+{
+    slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    addAndMakeVisible(slider);
+    attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, parameterID, slider);
 }

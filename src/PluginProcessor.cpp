@@ -25,7 +25,9 @@ SimpleDelay::SimpleDelay()
 #endif
               .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
-      )
+      ), apvts(*this, nullptr, "Parameters", {
+         std::make_unique<juce::AudioParameterFloat>("gain", "Gain", 0.0f, 1.0f, 0.5f)
+     })
 #endif
 {
 }
@@ -136,6 +138,7 @@ void SimpleDelay::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
       auto* channelData = buffer.getWritePointer(channel);
       fillCircularBuffer(channel, bufferSize, delayBufferSize, channelData);
       readFromBuffer (buffer, delayBuffer, channel, bufferSize, delayBufferSize);
+      fillCircularBuffer(channel, bufferSize, delayBufferSize, channelData);
     }
 
     writePosition += bufferSize;
@@ -175,7 +178,8 @@ void SimpleDelay::readFromBuffer(juce::AudioBuffer<float>& buffer, juce::AudioBu
     readPosition += delayBufferSize;
   }
 
-  auto g = 0.5f;
+  // use g as feedback 0.5 causes 10 instances
+  auto g = apvts.getRawParameterValue("gain")->load();
   //if no wrap is needed
   if(readPosition + bufferSize < delayBufferSize){
     // copy channelData from the past to present
@@ -190,6 +194,7 @@ void SimpleDelay::readFromBuffer(juce::AudioBuffer<float>& buffer, juce::AudioBu
   }
 }
 
+
 //==============================================================================
 bool SimpleDelay::hasEditor() const {
   return true;  // (change this to false if you choose to not supply an editor)
@@ -200,18 +205,20 @@ juce::AudioProcessorEditor *SimpleDelay::createEditor() {
 }
 
 //==============================================================================
-void SimpleDelay::getStateInformation(
-    juce::MemoryBlock &destData) {
-  // You should use this method to store your parameters in the memory block.
-  // You could do that either as raw data, or use the XML or ValueTree classes
-  // as intermediaries to make it easy to save and load complex data.
+void SimpleDelay::getStateInformation (juce::MemoryBlock& destData)
+{
+    auto state = apvts.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    copyXmlToBinary (*xml, destData);
 }
 
-void SimpleDelay::setStateInformation(const void *data,
-                                                   int sizeInBytes) {
-  // You should use this method to restore your parameters from this memory
-  // block, whose contents will have been created by the getStateInformation()
-  // call.
+void SimpleDelay::setStateInformation (const void* data, int sizeInBytes)
+{
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName (apvts.state.getType()))
+            apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
 //==============================================================================
